@@ -133,39 +133,59 @@
       this.recalcTotal(day);
     }
 
-    // A fehérjepor egyszerre ad fehérjét+kalóriát, a skálázás csökkenti a
-    // fehérjét – ezért a kettőt EGYÜTT oldjuk meg (binkeresés). Garantált:
-    // fehérje >= MIN ÉS kcal <= MAX.
+    // Beállítható kalória-cél / fehérje-minimum (a Beállításokból).
+    setConfig(over) {
+      const t = over.kcal_target || this.cfg.kcal_target;
+      this.cfg = Object.assign({}, this.cfg, over, {
+        kcal_target: t,
+        kcal_min: over.kcal_min || t - 100,
+        kcal_max: over.kcal_max || t + 100,
+        protein_min: over.protein_min || this.cfg.protein_min,
+      });
+    }
+
+    // A napot a CÉL kalóriához méretezzük (adagok arányos fel/le skálázása),
+    // és a fehérjeport EGYÜTT oldjuk meg, hogy a végén pontosan: kcal ≈ cél
+    // ÉS fehérje >= minimum. (final_kcal(s) monoton -> binkeresés.)
     correctDay(day) {
-      const MAX = this.cfg.kcal_max, MIN = this.cfg.kcal_min, PMIN = this.cfg.protein_min;
+      const T = this.cfg.kcal_target, MIN = this.cfg.kcal_min,
+        MAX = this.cfg.kcal_max, PMIN = this.cfg.protein_min;
       const pw = this.ingredients["fehérjepor"];
       const pk = pw.kcal / 100, pp = pw.p / 100;
       const fk = day.macros.kcal, fp = day.macros.p;
+      const SMIN = 0.25, SMAX = 2.5;          // az adag-átméretezés határai
       const finalKcal = (s) => {
         const powder = Math.max(0, (PMIN - s * fp) / pp);
         return [s * fk + pk * powder, powder];
       };
-      let s, powderG;
-      if (finalKcal(1)[0] <= MAX) { s = 1; }
+      // legnagyobb s, amire final_kcal(s) <= cél (a célt pontosan eltaláljuk)
+      let s;
+      if (finalKcal(SMIN)[0] >= T) s = SMIN;
+      else if (finalKcal(SMAX)[0] <= T) s = SMAX;
       else {
-        let lo = 0, hi = 1;
-        for (let i = 0; i < 40; i++) {
+        let lo = SMIN, hi = SMAX;
+        for (let i = 0; i < 44; i++) {
           const mid = (lo + hi) / 2;
-          if (finalKcal(mid)[0] <= MAX) lo = mid; else hi = mid;
+          if (finalKcal(mid)[0] <= T) lo = mid; else hi = mid;
         }
         s = lo;
       }
-      powderG = finalKcal(s)[1];
+      let powderG = finalKcal(s)[1];
 
-      if (s < 0.999) this.scaleFood(day, s * fk);
+      if (Math.abs(s - 1) > 0.001) this.scaleFood(day, s * fk);
       if (powderG > 0.05) {
         this.addCorrection(day, "Extra fehérje (shake)",
           [{ n: "fehérjepor", a: r1(powderG), u: "g" }]);
         this.recalcTotal(day);
       }
+      // biztonsági korlátok (ritka szélső esetek)
+      if (day.macros.kcal > MAX) {
+        const powderKcal = day.plan.filter((m) => m.type === "KORREKCIÓ")
+          .reduce((a, m) => a + m.recipe.macros.kcal, 0);
+        this.scaleFood(day, MAX - powderKcal);
+      }
       if (day.macros.kcal < MIN) {
-        const need = MIN - day.macros.kcal;
-        const amt = r1(need / this.ingredients["olívaolaj"].kcal * 100);
+        const amt = r1((MIN - day.macros.kcal) / this.ingredients["olívaolaj"].kcal * 100);
         this.addCorrection(day, "Kalória korrekció (olaj)",
           [{ n: "olívaolaj", a: amt, u: "g" }]);
         this.recalcTotal(day);
@@ -263,7 +283,7 @@
     toText(week) {
       let out = "HETI ÉTREND\n" + "=".repeat(60) + "\n\n";
       week.forEach((day, i) => {
-        out += `${i + 1}. NAP   (${day.source} – ${day.day})\n` + "-".repeat(50) + "\n";
+        out += `${i + 1}. NAP\n` + "-".repeat(50) + "\n";
         for (const m of day.plan) {
           if (m.recipe) {
             const mc = m.recipe.macros;

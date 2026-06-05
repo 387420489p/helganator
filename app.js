@@ -7,6 +7,9 @@
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
   let planner, mains, selected = new Set(), currentWeek = null, shopDone = new Set(), saved = [];
+  let settings = { target: 1550, protein: 90 };
+  const TARGET_OPTS = [1400, 1550, 1700, 1850, 2000];
+  const PROTEIN_OPTS = [90, 110, 130];
 
   // ---- betöltés ----
   fetch("data.json").then((r) => r.json()).then((data) => {
@@ -15,10 +18,18 @@
       .filter((r) => (r.meal_type || []).some((t) => t === "ebed" || t === "vacsora"))
       .sort((a, b) => a.name.localeCompare(b.name, "hu"));
     restore();
+    applySettings();
     renderDishList("");
     if (currentWeek) renderWeek(currentWeek);
     renderShop();
   }).catch((e) => { $("#dish-list").innerHTML = "<li class='empty'>Nem sikerült betölteni az adatokat.</li>"; console.error(e); });
+
+  function applySettings() {
+    planner.setConfig({ kcal_target: settings.target, protein_min: settings.protein });
+    const min = settings.target - 100, max = settings.target + 100;
+    $("#subtitle").textContent =
+      `napi ${min}–${max} kcal · min. ${settings.protein} g fehérje`;
+  }
 
   // ---- állapot mentés/visszaállítás ----
   function persist() {
@@ -26,6 +37,7 @@
       localStorage.setItem("hg_week", JSON.stringify(currentWeek));
       localStorage.setItem("hg_shopdone", JSON.stringify([...shopDone]));
       localStorage.setItem("hg_saved", JSON.stringify(saved));
+      localStorage.setItem("hg_settings", JSON.stringify(settings));
     } catch (e) {}
   }
   function restore() {
@@ -36,6 +48,8 @@
       if (s) shopDone = new Set(JSON.parse(s));
       const sv = localStorage.getItem("hg_saved");
       if (sv) saved = JSON.parse(sv);
+      const st = localStorage.getItem("hg_settings");
+      if (st) settings = Object.assign(settings, JSON.parse(st));
     } catch (e) {}
   }
 
@@ -114,7 +128,6 @@
       const head = el("div", "day-head");
       const left = el("div");
       left.appendChild(el("div", "day-title", `${i + 1}. nap`));
-      left.appendChild(el("div", "day-sub", `${day.source} – ${day.day}`));
       const right = el("div", "day-macros");
       right.innerHTML = `<b>${Math.round(day.macros.kcal)}</b> kcal<br>${Math.round(day.macros.p)} g fehérje`;
       head.append(left, right);
@@ -303,6 +316,45 @@
     if (view === "saved") renderSaved();
   }
   $$(".nav-btn").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
+
+  // ---- beállítások ----
+  $("#btn-settings").addEventListener("click", renderSettings);
+  function renderSettings() {
+    const body = $("#modal-body");
+    body.className = "modal-body";
+    body.innerHTML = "";
+    body.appendChild(el("h2", null, "⚙️ Beállítások"));
+
+    const group = (label, opts, cur, suffix, onPick) => {
+      const g = el("div", "set-group");
+      g.appendChild(el("div", "set-label", label));
+      const row = el("div", "set-opts");
+      for (const v of opts) {
+        const b = el("button", "set-opt" + (v === cur ? " on" : ""), v + suffix);
+        b.addEventListener("click", () => onPick(v));
+        row.appendChild(b);
+      }
+      g.appendChild(row);
+      body.appendChild(g);
+    };
+    group("Napi kalória-cél", TARGET_OPTS, settings.target, " kcal", (v) => {
+      settings.target = v; persist(); applySettings(); renderSettings();
+    });
+    group("Fehérje minimum / nap", PROTEIN_OPTS, settings.protein, " g", (v) => {
+      settings.protein = v; persist(); applySettings(); renderSettings();
+    });
+    const note = el("p", "set-note",
+      "A beállítás a következő heti tervre érvényes – az adagok arányosan " +
+      "igazodnak a célhoz, a fehérje a minimum fölött marad.");
+    body.appendChild(note);
+    if (currentWeek) {
+      const btn = el("button", "btn primary", "Új terv ezzel a beállítással");
+      btn.style.marginTop = "14px"; btn.style.width = "100%";
+      btn.addEventListener("click", () => { $("#modal").classList.add("hidden"); $("#btn-generate").click(); });
+      body.appendChild(btn);
+    }
+    $("#modal").classList.remove("hidden");
+  }
 
   // ---- toast ----
   let toastT;
