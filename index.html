@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d5b" />
+  <title>Helganator</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1>🍽️ Helganator <span class="subtitle-inline">heti étrend</span></h1>
+      <button id="btn-settings" class="gear" aria-label="Beállítások">⚙️</button>
+    </div>
+    <div id="subtitle" class="subtitle"></div>
+  </header>
+
+  <main id="app">
+    <!-- TERVEZŐ -->
+    <section id="view-plan" class="view active">
+      <div id="picker">
+        <div class="search-row">
+          <input id="search" type="search" placeholder="Étel keresése…" autocomplete="off" />
+        </div>
+        <div id="chips" class="chips"></div>
+        <div class="picker-actions">
+          <button id="btn-generate" class="btn primary">Heti terv készítése</button>
+          <button id="btn-clear" class="btn ghost">Ürítés</button>
+        </div>
+        <p class="hint">Pipálj ki ételeket amiket szeretnél a héten (vagy hagyd üresen a véletlen tervhez).</p>
+        <ul id="dish-list" class="dish-list"></ul>
+      </div>
+
+      <div id="week" class="week hidden"></div>
+    </section>
+
+    <!-- BEVÁSÁRLÓLISTA -->
+    <section id="view-shop" class="view">
+      <div id="shop-empty" class="empty">Készíts előbb egy heti tervet a Tervezőben.</div>
+      <ul id="shop-list" class="shop-list"></ul>
+    </section>
+
+    <!-- MENTETT HETEK -->
+    <section id="view-saved" class="view">
+      <div id="saved-empty" class="empty">Még nincs mentett heted. A Tervezőben a „Mentés" gombbal tudsz menteni egy hetet.</div>
+      <ul id="saved-list" class="dish-list"></ul>
+    </section>
+
+    <!-- MIT FŐZZEK -->
+    <section id="view-cook" class="view">
+      <p class="hint pad">Írd be vesszővel az otthon lévő alapanyagokat – megnézzük mit lehet főzni belőlük.</p>
+      <div class="search-row pad">
+        <input id="pantry" type="text" placeholder="pl. csirkemell, rizs, paradicsom, tojás" />
+      </div>
+      <div class="picker-actions pad">
+        <button id="btn-cook" class="btn primary">Mit főzhetek?</button>
+      </div>
+      <ul id="cook-list" class="dish-list"></ul>
+    </section>
+  </main>
+
+  <nav class="bottomnav">
+    <button class="nav-btn active" data-view="plan">📋<span>Tervező</span></button>
+    <button class="nav-btn" data-view="shop">🛒<span>Lista</span></button>
+    <button class="nav-btn" data-view="saved">💾<span>Mentett</span></button>
+    <button class="nav-btn" data-view="cook">🍳<span>Mit főzzek</span></button>
+  </nav>
+
+  <!-- recept-részlet modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button id="modal-close" class="modal-close">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="planner.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
