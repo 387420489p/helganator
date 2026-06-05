@@ -17,7 +17,7 @@
     "korpovit keksz", "gullón csokis digestive keksz", "gullón cukormentes",
     "light virsli", "melvit lapkenyér", "wasa fibre", "tk tortilla",
     "teljes kiőrlésű tortilla", "tk pita", "olívabogyó", "abonett"]);
-  const SHOP_ALIAS = { "teljeskiőrlésű": "tk kenyér", "teljes kiőrlésű": "tk kenyér",
+  const SHOP_ALIAS = { "teljes kiőrlésű kenyér": "tk kenyér",
     "közepes paradicsom": "paradicsom", "finn crisp original": "finn crisp",
     "egész csirkecomb": "csirkecomb" };
 
