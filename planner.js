@@ -204,7 +204,7 @@
       // skálázva, hogy a nap a célsávban maradjon.
       const SCOOP = 30, sk = SCOOP * pk, sp = SCOOP * pp;
       let scoops = 0, s = 1;
-      for (let i = 0; i <= 5; i++) {
+      for (let i = 0; i <= 16; i++) {       // sok mérőkanál is mehet (bulking: 200-250 g)
         s = Math.max(SMIN, Math.min(SMAX, (T - scoops * sk) / fk));
         if (s * fp + scoops * sp >= PMIN) break;
         scoops++;

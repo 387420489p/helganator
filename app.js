@@ -337,55 +337,40 @@
     body.innerHTML = "";
     body.appendChild(el("h2", null, "⚙️ Beállítások"));
 
-    const group = (label, opts, cur, suffix, onPick) => {
+    // újrahasznosítható csúszka + beíró mező (szinkronban), élő jegyzettel
+    const makeSlider = (label, key, min, max, step, noteFn) => {
       const g = el("div", "set-group");
       g.appendChild(el("div", "set-label", label));
-      const row = el("div", "set-opts");
-      for (const v of opts) {
-        const b = el("button", "set-opt" + (v === cur ? " on" : ""), v + suffix);
-        b.addEventListener("click", () => onPick(v));
-        row.appendChild(b);
-      }
-      g.appendChild(row);
+      const row = el("div", "slider-row");
+      const num = document.createElement("input");
+      num.type = "number"; num.className = "set-num";
+      num.min = min; num.max = max; num.step = step; num.value = settings[key];
+      const sl = document.createElement("input");
+      sl.type = "range"; sl.className = "set-slider";
+      sl.min = min; sl.max = max; sl.step = step; sl.value = settings[key];
+      const note = el("div", "set-note", "");
+      const clamp = (v) => Math.max(min, Math.min(max, Math.round(v / step) * step)) || min;
+      const refreshNote = () => { if (noteFn) note.textContent = noteFn(settings[key]); };
+      const set = (v, both) => {
+        settings[key] = clamp(v);
+        sl.value = settings[key];
+        if (both) num.value = settings[key];
+        refreshNote(); persist(); applySettings();
+      };
+      sl.addEventListener("input", () => { num.value = sl.value; settings[key] = clamp(+sl.value); refreshNote(); });
+      sl.addEventListener("change", () => set(+sl.value, true));
+      num.addEventListener("change", () => set(+num.value, true));
+      row.append(sl, num);
+      g.append(row);
+      refreshNote();
+      if (noteFn) g.append(note);
       body.appendChild(g);
     };
-    // kalória-cél: csúszka + beíró mező (szinkronban)
-    const cg = el("div", "set-group");
-    cg.appendChild(el("div", "set-label", "Napi kalória-cél"));
-    const sliderRow = el("div", "slider-row");
-    const numInput = document.createElement("input");
-    numInput.type = "number"; numInput.className = "set-num";
-    numInput.min = "1200"; numInput.max = "2800"; numInput.step = "10";
-    numInput.value = settings.target;
-    const slider = document.createElement("input");
-    slider.type = "range"; slider.className = "set-slider";
-    slider.min = "1200"; slider.max = "2800"; slider.step = "10";
-    slider.value = settings.target;
-    const clamp = (v) => Math.max(1200, Math.min(2800, Math.round(v / 10) * 10)) || 1500;
-    const bandNote = el("div", "set-note", "");
-    const updateNote = () => {
-      bandNote.textContent = `Egy nap ${settings.target - 50}–${settings.target + 50} kcal között lesz.`;
-    };
-    const setTarget = (v, syncBoth) => {
-      settings.target = clamp(v);
-      slider.value = settings.target;
-      if (syncBoth) numInput.value = settings.target;
-      updateNote(); persist(); applySettings();
-    };
-    slider.addEventListener("input", () => {
-      numInput.value = slider.value; settings.target = clamp(+slider.value); updateNote();
-    });
-    slider.addEventListener("change", () => setTarget(+slider.value, true));
-    numInput.addEventListener("change", () => setTarget(+numInput.value, true));
-    sliderRow.append(slider, numInput);
-    cg.appendChild(sliderRow);
-    updateNote();
-    cg.appendChild(bandNote);
-    body.appendChild(cg);
+    makeSlider("Napi kalória-cél (kcal)", "target", 1200, 3000, 10,
+      (v) => `Egy nap ${v - 50}–${v + 50} kcal között lesz.`);
+    makeSlider("Fehérje minimum / nap (g)", "protein", 60, 300, 5,
+      (v) => `Legalább ${v} g fehérje naponta (több lehet). Bulkinghoz pl. 200–250 g.`);
 
-    group("Fehérje minimum / nap", PROTEIN_OPTS, settings.protein, " g", (v) => {
-      settings.protein = v; persist(); applySettings(); renderSettings();
-    });
     const note = el("p", "set-note",
       "A beállítás a következő heti tervre érvényes – az adagok arányosan " +
       "igazodnak a célhoz, a fehérje a minimum fölött marad.");
