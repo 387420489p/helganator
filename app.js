@@ -318,6 +318,18 @@
   }
   $$(".nav-btn").forEach((btn) => btn.addEventListener("click", () => switchView(btn.dataset.view)));
 
+  // a Helganator név/ikon visszavisz a kezdőképernyőre (Tervező + ételválasztó)
+  function goHome() {
+    $("#week").classList.add("hidden");
+    $("#picker").classList.remove("hidden");
+    switchView("plan");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  $("#brand").addEventListener("click", goHome);
+  $("#brand").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") goHome();
+  });
+
   // ---- beállítások ----
   $("#btn-settings").addEventListener("click", renderSettings);
   function renderSettings() {
