@@ -15,7 +15,8 @@
   fetch("data.json").then((r) => r.json()).then((data) => {
     planner = new Planner(data);
     mains = planner.recipes
-      .filter((r) => (r.meal_type || []).some((t) => t === "ebed" || t === "vacsora"))
+      .filter((r) => (r.meal_type || []).some((t) => t === "ebed" || t === "vacsora")
+        && !planner.isSweet(r))   // desszert/snack ne legyen választható főétel
       .sort((a, b) => a.name.localeCompare(b.name, "hu"));
     restore();
     applySettings();

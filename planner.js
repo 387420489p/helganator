@@ -8,6 +8,10 @@
   const CARB_TAGS = ["rizs", "tészta", "krumpli", "burgonya", "tortilla",
     "pita", "bulgur", "quinoa", "kuszkusz", "köles", "spagetti", "édesburgonya"];
 
+  // Édesség/desszert/snack jelek: ezek NEM főételek, és nem kapnak köretet (rizs+olaj).
+  const DESSERT_TAGS = new Set(["édesség", "desszert", "édes", "gyümölcs", "puding",
+    "zabkása", "zab", "chia", "süti", "snack", "palacsinta"]);
+
   const UNIT_G = { g: 1, dkg: 10, kg: 1000, ml: 1, dl: 100, l: 1000,
     ek: 15, tk: 5, kk: 5, csipet: 0.5, gerezd: 5, fej: 100,
     marék: 25, csokor: 30, szelet: 20, "szál": 15, adag: 100 };
@@ -60,7 +64,14 @@
     add(a, b) { return { kcal: a.kcal + b.kcal, p: a.p + b.p, f: a.f + b.f, c: a.c + b.c }; }
     round(m) { return { kcal: r1(m.kcal), p: r1(m.p), f: r1(m.f), c: r1(m.c) }; }
 
+    // Édes/desszert/snack étel-e (nem főétel, nem kap köretet).
+    isSweet(recipe) {
+      if (recipe.flavor === "sweet") return true;
+      return (recipe.tags || []).some((t) => DESSERT_TAGS.has(t.toLowerCase()));
+    }
+
     needsSide(recipe) {
+      if (this.isSweet(recipe)) return false;   // édeshez sosem rizs+olaj
       const hay = ((recipe.tags || []).join(" ") + " " + recipe.name + " " +
         (recipe.ing || []).map((i) => i.n).join(" ")).toLowerCase();
       return !CARB_TAGS.some((c) => hay.includes(c));
