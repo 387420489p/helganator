@@ -81,7 +81,7 @@
       let ings = JSON.parse(JSON.stringify(recipe.ing || []));
       let macros = Object.assign({}, recipe.macros);
       if (addSide && this.needsSide(recipe)) {
-        const side = [{ n: "jázmin rizs", a: 55, u: "g" }, { n: "olívaolaj", a: 10, u: "g" }];
+        const side = [{ n: "rizs (jázmin, basmati, barna)", a: 55, u: "g" }, { n: "olívaolaj", a: 10, u: "g" }];
         ings = ings.concat(side);
         macros = this.add(macros, this.macrosOf(side));
       }
