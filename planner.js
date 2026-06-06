@@ -209,11 +209,12 @@
         if (s * fp + scoops * sp >= PMIN) break;
         scoops++;
       }
+      const scoopName = (n) => `Extra fehérje (${n} mérőkanál)`;
       const powderG = scoops * SCOOP;
 
       if (Math.abs(s - 1) > 0.001) this.scaleFood(day, s * fk);
       if (powderG > 0) {
-        this.addCorrection(day, "Extra fehérje (shake)",
+        this.addCorrection(day, scoopName(scoops),
           [{ n: "fehérjepor", a: powderG, u: "g" }]);
         this.recalcTotal(day);
       }
@@ -222,8 +223,13 @@
       // záró fehérje-biztosíték: ha a kerekítés után 90 alá esne, +1 mérőkanál
       if (day.macros.p < PMIN) {
         const corr = day.plan.find((m) => m.type === "KORREKCIÓ" && /fehérje/i.test(m.recipe.name));
-        if (corr) { corr.recipe.ing[0].a += SCOOP; corr.recipe.macros = this.round(this.macrosOf(corr.recipe.ing)); }
-        else this.addCorrection(day, "Extra fehérje (shake)", [{ n: "fehérjepor", a: SCOOP, u: "g" }]);
+        if (corr) {
+          corr.recipe.ing[0].a += SCOOP;
+          corr.recipe.macros = this.round(this.macrosOf(corr.recipe.ing));
+          corr.recipe.name = scoopName(Math.round(corr.recipe.ing[0].a / SCOOP));
+        } else {
+          this.addCorrection(day, scoopName(1), [{ n: "fehérjepor", a: SCOOP, u: "g" }]);
+        }
         this.recalcTotal(day);
       }
 
