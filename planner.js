@@ -10,7 +10,7 @@
 
   const UNIT_G = { g: 1, dkg: 10, kg: 1000, ml: 1, dl: 100, l: 1000,
     ek: 15, tk: 5, kk: 5, csipet: 0.5, gerezd: 5, fej: 100,
-    marék: 25, csokor: 30, szelet: 20, adag: 100 };
+    marék: 25, csokor: 30, szelet: 20, "szál": 15, adag: 100 };
 
   // Bevásárlólista: ezek darabban maradnak, minden más grammra megy.
   const SHOP_COUNTABLE = new Set(["tojás", "főtt tojás", "lágytojás", "finn crisp",
