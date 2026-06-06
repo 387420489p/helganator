@@ -1,5 +1,5 @@
 /* Helganator service worker – offline cache. */
-const CACHE = "helganator-v11";
+const CACHE = "helganator-v12";
 const ASSETS = [
   "./",
   "./index.html",
@@ -25,16 +25,17 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// cache-first: offline is működik, gyors indul
+// network-first: online MINDIG a friss verziót adja (és frissíti a cache-t),
+// offline a cache-ből szolgál ki -> nincs többé beragadt régi verzió.
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then((hit) =>
-      hit || fetch(e.request).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-        return res;
-      }).catch(() => caches.match("./index.html"))
+    fetch(e.request).then((res) => {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+      return res;
+    }).catch(() =>
+      caches.match(e.request).then((hit) => hit || caches.match("./index.html"))
     )
   );
 });
