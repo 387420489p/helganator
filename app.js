@@ -26,7 +26,7 @@
 
   function applySettings() {
     planner.setConfig({ kcal_target: settings.target, protein_min: settings.protein });
-    const min = settings.target - 100, max = settings.target + 100;
+    const min = settings.target - 50, max = settings.target + 50;
     $("#subtitle").textContent =
       `napi ${min}–${max} kcal · min. ${settings.protein} g fehérje`;
   }
@@ -337,9 +337,40 @@
       g.appendChild(row);
       body.appendChild(g);
     };
-    group("Napi kalória-cél", TARGET_OPTS, settings.target, " kcal", (v) => {
-      settings.target = v; persist(); applySettings(); renderSettings();
+    // kalória-cél: csúszka + beíró mező (szinkronban)
+    const cg = el("div", "set-group");
+    cg.appendChild(el("div", "set-label", "Napi kalória-cél"));
+    const sliderRow = el("div", "slider-row");
+    const numInput = document.createElement("input");
+    numInput.type = "number"; numInput.className = "set-num";
+    numInput.min = "1200"; numInput.max = "2800"; numInput.step = "10";
+    numInput.value = settings.target;
+    const slider = document.createElement("input");
+    slider.type = "range"; slider.className = "set-slider";
+    slider.min = "1200"; slider.max = "2800"; slider.step = "10";
+    slider.value = settings.target;
+    const clamp = (v) => Math.max(1200, Math.min(2800, Math.round(v / 10) * 10)) || 1500;
+    const bandNote = el("div", "set-note", "");
+    const updateNote = () => {
+      bandNote.textContent = `Egy nap ${settings.target - 50}–${settings.target + 50} kcal között lesz.`;
+    };
+    const setTarget = (v, syncBoth) => {
+      settings.target = clamp(v);
+      slider.value = settings.target;
+      if (syncBoth) numInput.value = settings.target;
+      updateNote(); persist(); applySettings();
+    };
+    slider.addEventListener("input", () => {
+      numInput.value = slider.value; settings.target = clamp(+slider.value); updateNote();
     });
+    slider.addEventListener("change", () => setTarget(+slider.value, true));
+    numInput.addEventListener("change", () => setTarget(+numInput.value, true));
+    sliderRow.append(slider, numInput);
+    cg.appendChild(sliderRow);
+    updateNote();
+    cg.appendChild(bandNote);
+    body.appendChild(cg);
+
     group("Fehérje minimum / nap", PROTEIN_OPTS, settings.protein, " g", (v) => {
       settings.protein = v; persist(); applySettings(); renderSettings();
     });

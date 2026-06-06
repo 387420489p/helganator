@@ -41,6 +41,11 @@ body {
   border-radius: 999px; padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .set-opt.on { background: var(--green); color: #fff; border-color: var(--green); }
 .set-note { font-size: 12.5px; color: var(--muted); margin: 14px 0 0; line-height: 1.5; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.set-num { width: 84px; flex: 0 0 auto; padding: 9px 10px; font-size: 16px; font-weight: 700;
+  text-align: center; border: 1px solid var(--line); border-radius: 10px; color: var(--green-d);
+  background: var(--card); }
+.set-slider { flex: 1; min-width: 0; accent-color: var(--green); height: 28px; }
 
 .view { display: none; }
 .view.active { display: block; }
@@ -92,7 +97,8 @@ body {
 
 /* heti terv */
 .week { padding: 8px 12px 24px; }
-.week-actions { display: flex; gap: 8px; padding: 4px 4px 12px; }
+.week-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 4px 12px; }
+.week-actions .btn { flex: 1 1 calc(50% - 8px); }
 .day-card {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   margin: 8px 4px; overflow: hidden;
@@ -112,9 +118,10 @@ body {
   padding: 10px 14px; border-bottom: 1px solid var(--line); cursor: pointer;
 }
 .meal:last-child { border-bottom: 0; }
+.meal > div:first-child { min-width: 0; }
 .meal-type { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; }
-.meal-name { font-size: 14px; font-weight: 500; margin-top: 1px; }
-.meal-kcal { font-size: 13px; color: var(--green-d); white-space: nowrap; }
+.meal-name { font-size: 14px; font-weight: 500; margin-top: 1px; overflow-wrap: anywhere; }
+.meal-kcal { font-size: 13px; color: var(--green-d); white-space: nowrap; flex: 0 0 auto; }
 .meal.corr .meal-name { color: var(--warn); font-style: italic; }
 
 /* bevásárlólista */
@@ -170,9 +177,10 @@ body {
 .prep-text { font-size: 14px; line-height: 1.55; color: var(--ink); margin: 4px 0 0; }
 .ing-list { list-style: none; margin: 8px 0 0; padding: 0; }
 .ing-list li { padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: 14px;
-  display: flex; justify-content: space-between; }
+  display: flex; justify-content: space-between; gap: 12px; }
 .ing-list li:last-child { border: 0; }
-.ing-amt { color: var(--muted); }
+.ing-list li > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ing-amt { color: var(--muted); flex: 0 0 auto; white-space: nowrap; }
 .miss-tag { display: inline-block; background: #fbe9e4; color: var(--warn);
   border-radius: 6px; padding: 1px 7px; font-size: 11px; margin: 2px 4px 0 0; }
 
