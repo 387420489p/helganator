@@ -198,9 +198,10 @@
       const pk = pw.kcal / 100, pp = pw.p / 100;
       const fk = day.macros.kcal, fp = day.macros.p;
       const SMIN = 0.25, SMAX = 2.5;
-      // A fehérje-shake FIX 30 g-os adagokban (egy mérőkanál). Megkeressük a
-      // legkevesebb mérőkanalat, amivel a fehérje eléri a minimumot, és az ÉTELT
-      // a maradék kalóriára skálázzuk -> a nap a cél körül marad.
+      // A fehérje-shake mindig egész mérőkanál (30 g = 21 g fehérje). Egy
+      // mérőkanál az alap; ha az nem elég a napi 90 g-hoz, annyi mérőkanalat
+      // adunk (30/60/90 g), amennyivel eléri – az ételt a maradék kalóriára
+      // skálázva, hogy a nap a célsávban maradjon.
       const SCOOP = 30, sk = SCOOP * pk, sp = SCOOP * pp;
       let scoops = 0, s = 1;
       for (let i = 0; i <= 5; i++) {
