@@ -6,7 +6,9 @@
   "use strict";
 
   const CARB_TAGS = ["rizs", "tészta", "krumpli", "burgonya", "tortilla",
-    "pita", "bulgur", "quinoa", "kuszkusz", "köles", "spagetti", "édesburgonya"];
+    "pita", "bulgur", "quinoa", "kuszkusz", "köles", "spagetti", "édesburgonya",
+    "kenyér", "zsemle", "kifli", "bagett", "wrap", "wasa", "lapkenyér",
+    "abonett", "finn crisp", "pirítós", "bundás", "szendvics"];
 
   // Édesség/desszert/snack jelek: ezek NEM főételek, és nem kapnak köretet (rizs+olaj).
   const DESSERT_TAGS = new Set(["édesség", "desszert", "édes", "gyümölcs", "puding",
@@ -68,6 +70,14 @@
     isSweet(recipe) {
       if (recipe.flavor === "sweet") return true;
       return (recipe.tags || []).some((t) => DESSERT_TAGS.has(t.toLowerCase()));
+    }
+
+    // Valódi főétel-e (ebéd/vacsora, de NEM reggeli és nem édesség) — ez kerülhet
+    // a húsos főétel-helyre és a választóba. Reggeli/szendvics-jellegűek kimaradnak.
+    isMainDish(r) {
+      const mt = r.meal_type || [];
+      return (mt.includes("ebed") || mt.includes("ebéd") || mt.includes("vacsora"))
+        && !mt.includes("reggeli") && !this.isSweet(r);
     }
 
     needsSide(recipe) {
