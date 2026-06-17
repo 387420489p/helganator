@@ -94,6 +94,9 @@ body {
   margin: 6px 4px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;
 }
 .dish-item.sel { border-color: var(--green); background: var(--accent); }
+.dish-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover;
+  flex: 0 0 auto; background: var(--accent); }
+.dish-thumb.noimg { display: grid; place-items: center; font-size: 20px; color: var(--muted); }
 .dish-item .check {
   width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line);
   flex: 0 0 auto; display: grid; place-items: center; font-size: 14px; color: #fff;
@@ -187,6 +190,8 @@ body {
 @keyframes slideup { from { transform: translateY(30px); opacity: .6; } to { transform: none; opacity: 1; } }
 .modal-close { position: absolute; top: 12px; right: 12px; background: var(--bg);
   border: 0; width: 32px; height: 32px; border-radius: 999px; font-size: 15px; cursor: pointer; }
+.recipe-hero { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px;
+  margin: 2px 0 12px; display: block; background: var(--accent); }
 .modal-body h2 { margin: 0 36px 4px 0; font-size: 19px; }
 .macro-row { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
 .macro-pill { background: var(--accent); color: var(--green-d); border-radius: 10px;

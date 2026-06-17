@@ -5,6 +5,15 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  // recept-bélyegkép (lusta betöltés, hibánál emoji-helyőrző)
+  const thumbPlaceholder = () => el("div", "dish-thumb noimg", "🍽");
+  function thumb(r) {
+    if (!r || !r.img) return thumbPlaceholder();
+    const im = el("img", "dish-thumb");
+    im.src = r.img; im.alt = ""; im.loading = "lazy"; im.decoding = "async";
+    im.addEventListener("error", () => im.replaceWith(thumbPlaceholder()));
+    return im;
+  }
 
   let planner, allRecipes = [], selected = new Set(), currentWeek = null, shopDone = new Set(), saved = [];
   let settings = { target: 1550, protein: 90 };
@@ -100,6 +109,7 @@
     if (!items.length) { list.appendChild(el("li", "empty", "Nincs találat.")); return; }
     for (const r of items) {
       const li = el("li", "dish-item" + (selected.has(r.name) ? " sel" : ""));
+      li.appendChild(thumb(r));
       li.appendChild(el("div", "check", selected.has(r.name) ? "✓" : ""));
       const main = el("div", "dish-main");
       main.appendChild(el("div", "dish-name", r.name));
@@ -221,6 +231,7 @@
     if (!res.length) { list.appendChild(el("li", "empty", "Ebből semmi nem jött ki – próbálj több alapanyagot.")); return; }
     for (const { recipe, missing, matchRatio } of res) {
       const li = el("li", "dish-item" + (missing.length === 0 ? " sel" : ""));
+      li.appendChild(thumb(recipe));
       li.appendChild(el("div", "check", missing.length === 0 ? "✓" : Math.round(matchRatio * 100) + "%"));
       const main = el("div", "dish-main");
       main.appendChild(el("div", "dish-name", recipe.name));
@@ -238,7 +249,7 @@
   // ---- recept modal ----
   // strukturált {n,a,u} hozzávalók, vagy ha üres, a nyers szöveges lista (ing_raw)
   const ingsOf = (r) => (r.ing && r.ing.length) ? r.ing : (r.ing_raw || []);
-  const metaOf = (r) => ({ servings: r.servings, wholeBatch: !!r.ing_whole });
+  const metaOf = (r) => ({ servings: r.servings, wholeBatch: !!r.ing_whole, img: r.img });
   function showRecipe(r) { renderModal(r.name, r.macros, ingsOf(r), r.prep, metaOf(r)); }
   function showMeal(recipe) {
     // az étkezés saját (skálázott) hozzávalói; prep/servings a mesterreceptből
@@ -250,6 +261,12 @@
     const body = $("#modal-body");
     body.className = "modal-body";
     body.innerHTML = "";
+    if (meta.img) {
+      const hero = el("img", "recipe-hero");
+      hero.src = meta.img; hero.alt = name; hero.loading = "lazy"; hero.decoding = "async";
+      hero.addEventListener("error", () => hero.remove());
+      body.appendChild(hero);
+    }
     body.appendChild(el("h2", null, name));
     const mr = el("div", "macro-row");
     const pill = (lab, val) => { const p = el("div", "macro-pill"); p.innerHTML = `<b>${val}</b>${lab}`; return p; };
