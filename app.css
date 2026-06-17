@@ -103,6 +103,17 @@ body {
 .dish-name { font-size: 15px; font-weight: 600; }
 .dish-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .dish-info { background: none; border: 0; font-size: 18px; color: var(--muted); cursor: pointer; padding: 4px; }
+/* lista info-gomb: feltűnő, kitöltött zöld kör fehér „i"-vel */
+.dish-info.info {
+  flex: 0 0 auto; width: 34px; height: 34px; padding: 0;
+  border-radius: 999px; background: var(--green); color: #fff;
+  font-family: Georgia, "Times New Roman", serif; font-style: italic;
+  font-weight: 700; font-size: 19px; line-height: 1;
+  display: grid; place-items: center;
+  box-shadow: 0 2px 5px rgba(46,125,91,.35);
+}
+.dish-info.info:hover { background: var(--green-d); }
+.dish-info.info:active { background: var(--green-d); transform: scale(.92); }
 
 /* heti terv */
 .week { padding: 8px 12px 24px; }

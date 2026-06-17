@@ -99,7 +99,9 @@
       main.appendChild(el("div", "dish-name", r.name));
       main.appendChild(el("div", "dish-meta", `${Math.round(r.macros.kcal)} kcal · ${Math.round(r.macros.p)} g fehérje`));
       li.appendChild(main);
-      const info = el("button", "dish-info", "ⓘ");
+      const info = el("button", "dish-info info", "i");
+      info.title = "Részletek, makrók, hozzávalók";
+      info.setAttribute("aria-label", "Részletek megnyitása");
       info.addEventListener("click", (ev) => { ev.stopPropagation(); showRecipe(r); });
       li.appendChild(info);
       li.addEventListener("click", () => { toggleSelect(r.name); });
