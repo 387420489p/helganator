@@ -249,7 +249,7 @@
   // ---- recept modal ----
   // strukturált {n,a,u} hozzávalók, vagy ha üres, a nyers szöveges lista (ing_raw)
   const ingsOf = (r) => (r.ing && r.ing.length) ? r.ing : (r.ing_raw || []);
-  const metaOf = (r) => ({ servings: r.servings, wholeBatch: !!r.ing_whole, img: r.img });
+  const metaOf = (r) => ({ servings: r.servings, wholeBatch: !!r.ing_whole, img: r.img, stock: !!r.img_stock });
   function showRecipe(r) { renderModal(r.name, r.macros, ingsOf(r), r.prep, metaOf(r)); }
   function showMeal(recipe) {
     // az étkezés saját (skálázott) hozzávalói; prep/servings a mesterreceptből
@@ -264,8 +264,10 @@
     if (meta.img) {
       const hero = el("img", "recipe-hero");
       hero.src = meta.img; hero.alt = name; hero.loading = "lazy"; hero.decoding = "async";
-      hero.addEventListener("error", () => hero.remove());
+      const stockCap = meta.stock ? el("p", "hero-stock", "📷 illusztráció – nem a recept saját fotója") : null;
+      hero.addEventListener("error", () => { hero.remove(); if (stockCap) stockCap.remove(); });
       body.appendChild(hero);
+      if (stockCap) body.appendChild(stockCap);
     }
     body.appendChild(el("h2", null, name));
     const mr = el("div", "macro-row");
