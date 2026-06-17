@@ -80,6 +80,14 @@ body {
 
 .hint { color: var(--muted); font-size: 13px; padding: 4px 16px 10px; margin: 0; }
 
+/* recept-böngésző kategóriaszűrő */
+.cat-filter { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 16px 8px; }
+.cat-btn { border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.cat-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+.cat-btn:active { background: var(--accent); }
+.cat-btn.active:active { background: var(--green-d); }
+
 .dish-list { list-style: none; margin: 0; padding: 4px 12px 20px; }
 .dish-item {
   background: var(--card); border: 1px solid var(--line); border-radius: 12px;

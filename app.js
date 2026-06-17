@@ -6,23 +6,55 @@
   const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  let planner, mains, selected = new Set(), currentWeek = null, shopDone = new Set(), saved = [];
+  let planner, allRecipes = [], selected = new Set(), currentWeek = null, shopDone = new Set(), saved = [];
   let settings = { target: 1550, protein: 90 };
   const TARGET_OPTS = [1400, 1550, 1700, 1850, 2000];
   const PROTEIN_OPTS = [90, 110, 130];
 
+  // recept-böngésző kategóriaszűrői (minden recept elérhető, nem csak a főételek)
+  const mt = (r) => r.meal_type || [];
+  const FILTERS = [
+    { key: "main", label: "Főételek", test: (r) => planner.isMainDish(r) },
+    { key: "reggeli", label: "Reggeli", test: (r) => mt(r).includes("reggeli") },
+    { key: "sweet", label: "Édes / desszert", test: (r) => r.flavor === "sweet" },
+    { key: "leves", label: "Leves", test: (r) => (r.tags || []).includes("leves") },
+    { key: "snack", label: "Snack / nasi", test: (r) => mt(r).includes("snack") },
+    { key: "all", label: "Mind", test: () => true },
+  ];
+  let currentFilter = "main";
+  const currentList = () => {
+    const f = FILTERS.find((x) => x.key === currentFilter) || FILTERS[0];
+    return allRecipes.filter(f.test);
+  };
+
   // ---- betöltés ----
   fetch("data.json").then((r) => r.json()).then((data) => {
     planner = new Planner(data);
-    mains = planner.recipes
-      .filter((r) => planner.isMainDish(r))   // valódi ebéd/vacsora főételek (nem reggeli/desszert)
+    allRecipes = planner.recipes
+      .slice()
       .sort((a, b) => a.name.localeCompare(b.name, "hu"));
     restore();
     applySettings();
+    renderCatFilter();
     renderDishList("");
     if (currentWeek) renderWeek(currentWeek);
     renderShop();
   }).catch((e) => { $("#dish-list").innerHTML = "<li class='empty'>Nem sikerült betölteni az adatokat.</li>"; console.error(e); });
+
+  function renderCatFilter() {
+    const box = $("#cat-filter");
+    if (!box) return;
+    box.innerHTML = "";
+    for (const f of FILTERS) {
+      const b = el("button", "cat-btn" + (f.key === currentFilter ? " active" : ""), f.label);
+      b.addEventListener("click", () => {
+        currentFilter = f.key;
+        renderCatFilter();
+        renderDishList($("#search").value);
+      });
+      box.appendChild(b);
+    }
+  }
 
   function applySettings() {
     planner.setConfig({ kcal_target: settings.target, protein_min: settings.protein });
@@ -58,7 +90,7 @@
     const list = $("#dish-list");
     list.innerHTML = "";
     const ql = q.toLowerCase();
-    const items = mains.filter((r) => !ql || r.name.toLowerCase().includes(ql));
+    const items = currentList().filter((r) => !ql || r.name.toLowerCase().includes(ql));
     if (!items.length) { list.appendChild(el("li", "empty", "Nincs találat.")); return; }
     for (const r of items) {
       const li = el("li", "dish-item" + (selected.has(r.name) ? " sel" : ""));
@@ -195,10 +227,13 @@
   });
 
   // ---- recept modal ----
-  function showRecipe(r) { renderModal(r.name, r.macros, r.ing, r.prep); }
+  // strukturált {n,a,u} hozzávalók, vagy ha üres, a nyers szöveges lista (ing_raw)
+  const ingsOf = (r) => (r.ing && r.ing.length) ? r.ing : (r.ing_raw || []);
+  function showRecipe(r) { renderModal(r.name, r.macros, ingsOf(r), r.prep); }
   function showMeal(recipe) {
+    // az étkezés saját (skálázott) hozzávalói; prep a mesterreceptből ha hiányzik
     const prep = recipe.prep || (planner.byId.get(recipe.id) || {}).prep || "";
-    renderModal(recipe.name, recipe.macros, recipe.ing, prep);
+    renderModal(recipe.name, recipe.macros, ingsOf(recipe), prep);
   }
   function renderModal(name, macros, ings, prep) {
     const body = $("#modal-body");
@@ -215,8 +250,13 @@
     const ul = el("ul", "ing-list");
     for (const ing of ings) {
       const li = el("li");
-      li.appendChild(el("span", null, cap(ing.n)));
-      li.appendChild(el("span", "ing-amt", `${ing.a} ${ing.u}`));
+      if (typeof ing === "string") {
+        // nyers szöveges hozzávaló (ing_raw): a mennyiség a szövegben van
+        li.appendChild(el("span", null, cap(ing)));
+      } else {
+        li.appendChild(el("span", null, cap(ing.n)));
+        li.appendChild(el("span", "ing-amt", `${ing.a} ${ing.u}`));
+      }
       ul.appendChild(li);
     }
     body.appendChild(ul);

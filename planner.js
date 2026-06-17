@@ -14,6 +14,16 @@
   const DESSERT_TAGS = new Set(["édesség", "desszert", "édes", "gyümölcs", "puding",
     "zabkása", "zab", "chia", "süti", "snack", "palacsinta"]);
 
+  // Pool-nap (receptpool-alapú nap) étkezési helyei: [címke, megengedett meal_type-ok].
+  // Így a teljes receptkészlet – nem csak a főételek – bekerülhet a generált hetekbe.
+  const POOL_SLOTS = [
+    ["reggeli", new Set(["reggeli"])],
+    ["tízórai", new Set(["tizorai", "snack"])],
+    ["ebéd", new Set(["ebed", "ebéd"])],
+    ["uzsonna", new Set(["uzsonna", "snack"])],
+    ["vacsora", new Set(["vacsora"])],
+  ];
+
   const UNIT_G = { g: 1, dkg: 10, kg: 1000, ml: 1, dl: 100, l: 1000,
     ek: 15, tk: 5, kk: 5, csipet: 0.5, gerezd: 5, fej: 100,
     marék: 25, csokor: 30, szelet: 20, "szál": 15, adag: 100 };
@@ -95,7 +105,55 @@
         ings = ings.concat(side);
         macros = this.add(macros, this.macrosOf(side));
       }
-      return { name: recipe.name, id: recipe.id, ing: ings, macros: this.round(macros), prep: recipe.prep || "" };
+      return { name: recipe.name, id: recipe.id, ing: ings,
+        ing_raw: (recipe.ing_raw || []).slice(),
+        macros: this.round(macros), prep: recipe.prep || "" };
+    }
+
+    // ---- pool-nap: receptpool-alapú nap meal_type szerint ----
+    dayIds(day) {
+      const s = new Set();
+      for (const m of day.plan) if (m.recipe && m.recipe.id != null) s.add(m.recipe.id);
+      return s;
+    }
+
+    candidates(allowed, excludeIds) {
+      return this.recipes.filter((r) =>
+        !excludeIds.has(r.id) && (r.meal_type || []).some((t) => allowed.has(t)));
+    }
+
+    anchorSlot(recipe) {
+      const mt = new Set(recipe.meal_type || []);
+      for (const [label, allowed] of POOL_SLOTS)
+        if ([...mt].some((t) => allowed.has(t))) return label;
+      return "uzsonna";
+    }
+
+    // Egy teljes nap a receptpoolból; a kért `anchor` receptet a meal_type-jának
+    // megfelelő helyre teszi (édes és sós is bekerülhet).
+    generatePoolDay(usedIds, anchor, dayLabel) {
+      const plan = [];
+      const dayUsed = new Set();
+      const anchorSlot = anchor ? this.anchorSlot(anchor) : null;
+      for (const [label, allowed] of POOL_SLOTS) {
+        let r;
+        if (anchor && label === anchorSlot && !dayUsed.has(anchor.id)) {
+          r = anchor;
+        } else {
+          const ex = new Set([...usedIds, ...dayUsed]);
+          let cands = this.candidates(allowed, ex);
+          if (!cands.length) cands = this.candidates(allowed, dayUsed);
+          if (!cands.length) continue;
+          r = cands[(Math.random() * cands.length) | 0];
+        }
+        dayUsed.add(r.id);
+        plan.push({ type: label, recipe: this.mealRecipe(r, false) });
+      }
+      for (const id of dayUsed) usedIds.add(id);
+      let total = { kcal: 0, p: 0, f: 0, c: 0 };
+      for (const m of plan) total = this.add(total, m.recipe.macros);
+      return { day: dayLabel || "Pool nap", source: "Receptpool", plan,
+        macros: this.round(total) };
     }
 
     generateDay(template, forcedId) {
@@ -275,31 +333,39 @@
     }
 
     planWeek(requestedNames) {
-      const week = [], used = new Set();
+      const week = [], used = new Set(), usedIds = new Set();
       const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+      const register = (day) => {
+        week.push(day);
+        for (const id of this.dayIds(day)) usedIds.add(id);
+      };
 
       for (const name of requestedNames || []) {
         const r = this.byName.get(name.toLowerCase());
         if (!r) continue;
-        const host = this.findHost(r);
-        let idx, forced;
-        if (host && !used.has(host[0])) { idx = host[0]; forced = host[1]; }
-        else {
-          let free = this.kollyIndices().filter((i) => !used.has(i));
-          if (!free.length) free = this.kollyIndices();
-          idx = pick(free); forced = r.id;
+        // Főétel saját (curated) gazda nappal -> azt használjuk; minden más
+        // (reggeli/desszert/snack vagy gazda nélküli) köré receptpool-napot építünk.
+        const host = this.isMainDish(r) ? this.findHost(r) : null;
+        if (host && !used.has(host[0])) {
+          register(this.correctDay(this.generateDay(this.templates[host[0]], host[1])));
+          used.add(host[0]);
+        } else {
+          register(this.correctDay(this.generatePoolDay(usedIds, r, `${r.name} köré`)));
         }
-        week.push(this.correctDay(this.generateDay(this.templates[idx], forced)));
-        used.add(idx);
         if (week.length >= 7) break;
       }
+      // feltöltés: keverjük a curated sablon-napokat és a receptpool-napokat
       while (week.length < 7) {
-        let free = [];
+        const free = [];
         for (let i = 0; i < this.templates.length; i++) if (!used.has(i)) free.push(i);
-        if (!free.length) free = this.kollyIndices();
-        const idx = pick(free);
-        week.push(this.correctDay(this.generateDay(this.templates[idx])));
-        used.add(idx);
+        const usePool = !free.length || Math.random() < 0.5;
+        if (usePool) {
+          register(this.correctDay(this.generatePoolDay(usedIds)));
+        } else {
+          const idx = pick(free);
+          register(this.correctDay(this.generateDay(this.templates[idx])));
+          used.add(idx);
+        }
       }
       return week.slice(0, 7);
     }
@@ -347,7 +413,10 @@
             const mc = m.recipe.macros;
             out += `[${m.type.toUpperCase()}] ${m.recipe.name} (${Math.round(mc.kcal)} kcal)\n`;
             out += `   P ${mc.p}g | F ${mc.f}g | C ${mc.c}g\n`;
-            out += "   Hozzávalók: " + m.recipe.ing.map((i) => `${i.a}${i.u} ${i.n}`).join(", ") + "\n";
+            if (m.recipe.ing && m.recipe.ing.length)
+              out += "   Hozzávalók: " + m.recipe.ing.map((i) => `${i.a}${i.u} ${i.n}`).join(", ") + "\n";
+            else if (m.recipe.ing_raw && m.recipe.ing_raw.length)
+              out += "   Hozzávalók: " + m.recipe.ing_raw.join("; ") + "\n";
           } else out += `[${m.type.toUpperCase()}] ${m.note || "Nincs adat"}\n`;
         }
         const dm = day.macros;
