@@ -231,13 +231,15 @@
   // ---- recept modal ----
   // strukturált {n,a,u} hozzávalók, vagy ha üres, a nyers szöveges lista (ing_raw)
   const ingsOf = (r) => (r.ing && r.ing.length) ? r.ing : (r.ing_raw || []);
-  function showRecipe(r) { renderModal(r.name, r.macros, ingsOf(r), r.prep); }
+  const metaOf = (r) => ({ servings: r.servings, wholeBatch: !!r.ing_whole });
+  function showRecipe(r) { renderModal(r.name, r.macros, ingsOf(r), r.prep, metaOf(r)); }
   function showMeal(recipe) {
-    // az étkezés saját (skálázott) hozzávalói; prep a mesterreceptből ha hiányzik
-    const prep = recipe.prep || (planner.byId.get(recipe.id) || {}).prep || "";
-    renderModal(recipe.name, recipe.macros, ingsOf(recipe), prep);
+    // az étkezés saját (skálázott) hozzávalói; prep/servings a mesterreceptből
+    const master = planner.byId.get(recipe.id) || recipe;
+    const prep = recipe.prep || master.prep || "";
+    renderModal(recipe.name, recipe.macros, ingsOf(recipe), prep, metaOf(master));
   }
-  function renderModal(name, macros, ings, prep) {
+  function renderModal(name, macros, ings, prep, meta = {}) {
     const body = $("#modal-body");
     body.className = "modal-body";
     body.innerHTML = "";
@@ -247,8 +249,20 @@
     mr.append(pill("kcal", Math.round(macros.kcal)), pill("g fehérje", Math.round(macros.p)),
       pill("g zsír", Math.round(macros.f)), pill("g szénh.", Math.round(macros.c)));
     body.appendChild(mr);
+    // A makrók MINDIG egy adagra vonatkoznak – egyértelműen jelezzük.
+    body.appendChild(el("p", "macro-note", "▲ A fenti kalória és makrók 1 adagra szólnak"));
 
-    body.appendChild(el("h3", "sec-title", "Hozzávalók"));
+    const sv = meta.servings;
+    let ingHead = "Hozzávalók";
+    if (meta.wholeBatch && sv) ingHead = `Hozzávalók – a TELJES recepthez (${sv} adag)`;
+    else if (sv && sv > 1) ingHead = "Hozzávalók – 1 adagra";
+    body.appendChild(el("h3", "sec-title", ingHead));
+    if (sv && sv > 1) {
+      const note = meta.wholeBatch
+        ? `Ez a recept ${sv} adagból áll. Az alábbi mennyiségek a TELJES receptre vonatkoznak – a fenti makró 1 adagra szól (oszd el ${sv} felé).`
+        : `Ez a recept ${sv} adagból áll. Az alábbi mennyiségek és a fenti makrók 1 adagra vannak megadva.`;
+      body.appendChild(el("p", "ing-note", note));
+    }
     const ul = el("ul", "ing-list");
     for (const ing of ings) {
       const li = el("li");
