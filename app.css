@@ -196,6 +196,24 @@ body {
   margin: -4px 0 2px; }
 .ing-note { font-size: 12.5px; color: var(--muted); line-height: 1.5;
   background: var(--accent); border-radius: 8px; padding: 8px 10px; margin: 6px 0 2px; }
+/* makró-arány sáv */
+.macrobar-wrap { margin: 8px 0 2px; }
+.macrobar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--line); }
+.macrobar > div { height: 100%; }
+.mb-p { background: #2e7d5b; } .mb-f { background: #e0a23b; } .mb-c { background: #5b8def; }
+.macrobar-leg { display: flex; gap: 14px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.mb-leg-item { display: flex; align-items: center; gap: 5px; }
+.mb-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.mb-dot.mb-p { background: #2e7d5b; } .mb-dot.mb-f { background: #e0a23b; } .mb-dot.mb-c { background: #5b8def; }
+/* hozzávalók fejléc + másoló gomb */
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.copy-btn { background: var(--accent); color: var(--green-d); border: 0; border-radius: 8px;
+  padding: 5px 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; flex: 0 0 auto; }
+.copy-btn:active { background: var(--green); color: #fff; }
+.cat-count { font-size: 11px; opacity: .7; font-weight: 600; }
+.cat-btn.active .cat-count { opacity: .9; }
+.dish-count { font-size: 12.5px; color: var(--muted); padding: 0 16px 6px; }
+.day-macros-sub { font-size: 11px; opacity: .85; }
 .sec-title { font-size: 13px; text-transform: uppercase; letter-spacing: .05em;
   color: var(--muted); margin: 18px 0 4px; }
 .prep-text { font-size: 14px; line-height: 1.55; color: var(--ink); margin: 4px 0 0; }

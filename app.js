@@ -46,7 +46,9 @@
     if (!box) return;
     box.innerHTML = "";
     for (const f of FILTERS) {
-      const b = el("button", "cat-btn" + (f.key === currentFilter ? " active" : ""), f.label);
+      const n = allRecipes.filter(f.test).length;
+      const b = el("button", "cat-btn" + (f.key === currentFilter ? " active" : ""));
+      b.innerHTML = `${f.label} <span class="cat-count">${n}</span>`;
       b.addEventListener("click", () => {
         currentFilter = f.key;
         renderCatFilter();
@@ -91,6 +93,10 @@
     list.innerHTML = "";
     const ql = q.toLowerCase();
     const items = currentList().filter((r) => !ql || r.name.toLowerCase().includes(ql));
+    const cnt = $("#dish-count");
+    if (cnt) cnt.textContent = items.length
+      ? `${items.length} recept${ql ? " a keresésre" : ""}`
+      : "";
     if (!items.length) { list.appendChild(el("li", "empty", "Nincs találat.")); return; }
     for (const r of items) {
       const li = el("li", "dish-item" + (selected.has(r.name) ? " sel" : ""));
@@ -163,7 +169,8 @@
       const left = el("div");
       left.appendChild(el("div", "day-title", `${i + 1}. nap`));
       const right = el("div", "day-macros");
-      right.innerHTML = `<b>${Math.round(day.macros.kcal)}</b> kcal<br>${Math.round(day.macros.p)} g fehérje`;
+      right.innerHTML = `<b>${Math.round(day.macros.kcal)}</b> kcal<br>` +
+        `<span class="day-macros-sub">F ${Math.round(day.macros.p)} · Zs ${Math.round(day.macros.f)} · Sz ${Math.round(day.macros.c)} g</span>`;
       head.append(left, right);
       head.addEventListener("click", () => card.classList.toggle("open"));
       card.appendChild(head);
@@ -251,12 +258,21 @@
     body.appendChild(mr);
     // A makrók MINDIG egy adagra vonatkoznak – egyértelműen jelezzük.
     body.appendChild(el("p", "macro-note", "▲ A fenti kalória és makrók 1 adagra szólnak"));
+    body.appendChild(macroBar(macros));
 
     const sv = meta.servings;
     let ingHead = "Hozzávalók";
     if (meta.wholeBatch && sv) ingHead = `Hozzávalók – a TELJES recepthez (${sv} adag)`;
     else if (sv && sv > 1) ingHead = "Hozzávalók – 1 adagra";
-    body.appendChild(el("h3", "sec-title", ingHead));
+    const headRow = el("div", "sec-head");
+    headRow.appendChild(el("h3", "sec-title", ingHead));
+    const copyBtn = el("button", "copy-btn", "⧉ Másol");
+    copyBtn.addEventListener("click", () => {
+      const text = ings.map((x) => typeof x === "string" ? x : `${cap(x.n)} – ${x.a} ${x.u}`).join("\n");
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("Hozzávalók másolva ✓")).catch(() => {});
+    });
+    headRow.appendChild(copyBtn);
+    body.appendChild(headRow);
     if (sv && sv > 1) {
       const note = meta.wholeBatch
         ? `Ez a recept ${sv} adagból áll. Az alábbi mennyiségek a TELJES receptre vonatkoznak – a fenti makró 1 adagra szól (oszd el ${sv} felé).`
@@ -282,9 +298,27 @@
       body.appendChild(el("p", "prep-text", prep));
     }
     $("#modal").classList.remove("hidden");
+    const card = $(".modal-card"); if (card) card.scrollTop = 0;   // mindig a tetejéről nyíljon
   }
-  $("#modal-close").addEventListener("click", () => $("#modal").classList.add("hidden"));
-  $("#modal").addEventListener("click", (e) => { if (e.target.id === "modal") $("#modal").classList.add("hidden"); });
+  // makró-arány sáv (fehérje / zsír / szénhidrát kalória-megoszlása)
+  function macroBar(m) {
+    const pk = 4 * (m.p || 0), fk = 9 * (m.f || 0), ck = 4 * (m.c || 0);
+    const tot = pk + fk + ck || 1;
+    const wrap = el("div", "macrobar-wrap");
+    const bar = el("div", "macrobar");
+    const seg = (cls, v) => { const s = el("div", "mb-" + cls); s.style.width = (v / tot * 100) + "%"; return s; };
+    bar.append(seg("p", pk), seg("f", fk), seg("c", ck));
+    wrap.appendChild(bar);
+    const leg = el("div", "macrobar-leg");
+    const it = (cls, lab, v) => { const d = el("div", "mb-leg-item"); d.innerHTML = `<i class="mb-dot mb-${cls}"></i>${lab} ${Math.round(v / tot * 100)}%`; return d; };
+    leg.append(it("p", "Fehérje", pk), it("f", "Zsír", fk), it("c", "Szénh.", ck));
+    wrap.appendChild(leg);
+    return wrap;
+  }
+  function closeModal() { $("#modal").classList.add("hidden"); }
+  $("#modal-close").addEventListener("click", closeModal);
+  $("#modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
   // ---- mentés / megosztás ----
   async function shareWeek() {
