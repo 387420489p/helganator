@@ -1,5 +1,5 @@
 /* Helganator service worker – offline cache. */
-const CACHE = "helganator-v23";
+const CACHE = "helganator-v24";
 const ASSETS = [
   "./",
   "./index.html",
