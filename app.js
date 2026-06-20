@@ -186,15 +186,24 @@
       card.appendChild(head);
 
       const meals = el("div", "day-meals");
-      for (const m of day.plan) {
+      for (let mealIdx = 0; mealIdx < day.plan.length; mealIdx++) {
+        const m = day.plan[mealIdx];
         const row = el("div", "meal" + (m.type === "KORREKCIÓ" ? " corr" : ""));
-        const l = el("div");
+        const l = el("div", "meal-left");
         l.appendChild(el("div", "meal-type", m.type));
         l.appendChild(el("div", "meal-name", m.recipe ? m.recipe.name : (m.note || "—")));
         row.appendChild(l);
         if (m.recipe) {
           row.appendChild(el("div", "meal-kcal", `${Math.round(m.recipe.macros.kcal)} kcal`));
-          row.addEventListener("click", () => showMeal(m.recipe));
+          const actions = el("div", "meal-actions");
+          const viewBtn = el("button", "meal-btn", "👁");
+          viewBtn.title = "Megtekintés";
+          viewBtn.addEventListener("click", (e) => { e.stopPropagation(); showMeal(m.recipe); });
+          const swapBtn = el("button", "meal-btn", "🔄");
+          swapBtn.title = "Csere";
+          swapBtn.addEventListener("click", (e) => { e.stopPropagation(); showSwapDialog(i, mealIdx, day); });
+          actions.append(viewBtn, swapBtn);
+          row.appendChild(actions);
         }
         meals.appendChild(row);
       }
@@ -257,7 +266,51 @@
     const prep = recipe.prep || master.prep || "";
     renderModal(recipe.name, recipe.macros, ingsOf(recipe), prep, metaOf(master));
   }
-  function renderModal(name, macros, ings, prep, meta = {}) {
+
+  function showSwapDialog(dayIdx, mealIdx, day) {
+    const m = day.plan[mealIdx];
+    if (!m.recipe) return;
+
+    // Milyen meal_type-ú ételek kerülhetnek ide?
+    const allowed = planner.recipes.filter((r) =>
+      (r.meal_type || []).some((t) => (m.type || "").toLowerCase().replace("ó", "o") === t)
+    ).sort((a, b) => a.name.localeCompare(b.name, "hu"));
+
+    const modal = el("div", "modal hidden");
+    const card = el("div", "modal-card");
+    const close = el("button", "modal-close", "✕");
+    close.addEventListener("click", () => modal.remove());
+    card.appendChild(close);
+
+    const title = el("h2", null, `Csere: ${m.type}`);
+    card.appendChild(title);
+
+    const list = el("ul", "swap-list");
+    for (const r of allowed) {
+      const li = el("li", "swap-item");
+      li.appendChild(thumb(r));
+      const main = el("div", "swap-main");
+      main.appendChild(el("div", "dish-name", r.name));
+      main.appendChild(el("div", "dish-meta", `${Math.round((r.macros || {}).kcal || 0)} kcal`));
+      li.appendChild(main);
+      li.addEventListener("click", () => {
+        day.plan[mealIdx].recipe = planner.mealRecipe(r, false);
+        currentWeek[dayIdx] = day;
+        persist();
+        renderWeek(currentWeek);
+        renderShop();
+        modal.remove();
+        toast(`${m.type} lecserélve: ${r.name}`);
+      });
+      list.appendChild(li);
+    }
+    card.appendChild(list);
+    modal.appendChild(card);
+    modal.classList.remove("hidden");
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+  }
+  function renderModal(name, macros, ings, prep, meta = {}, multiplier = 1) {
     const body = $("#modal-body");
     body.className = "modal-body";
     body.innerHTML = "";
@@ -270,14 +323,46 @@
       if (stockCap) body.appendChild(stockCap);
     }
     body.appendChild(el("h2", null, name));
+
+    // Adagszorzó
+    const multRow = el("div", "mult-row");
+    const multLabel = el("label", null, "Hány adagot főzök?");
+    const multInput = el("input", "mult-input");
+    multInput.type = "number";
+    multInput.min = "0.5";
+    multInput.step = "0.5";
+    multInput.value = multiplier;
+    multRow.appendChild(multLabel);
+    multRow.appendChild(multInput);
+    body.appendChild(multRow);
+
+    // Makrók (szorzóval)
+    const scaledMacros = multiplier !== 1 ? {
+      kcal: macros.kcal * multiplier,
+      p: macros.p * multiplier,
+      f: macros.f * multiplier,
+      c: macros.c * multiplier
+    } : macros;
+
     const mr = el("div", "macro-row");
     const pill = (lab, val) => { const p = el("div", "macro-pill"); p.innerHTML = `<b>${val}</b>${lab}`; return p; };
-    mr.append(pill("kcal", Math.round(macros.kcal)), pill("g fehérje", Math.round(macros.p)),
-      pill("g zsír", Math.round(macros.f)), pill("g szénh.", Math.round(macros.c)));
+    mr.append(pill("kcal", Math.round(scaledMacros.kcal)), pill("g fehérje", Math.round(scaledMacros.p)),
+      pill("g zsír", Math.round(scaledMacros.f)), pill("g szénh.", Math.round(scaledMacros.c)));
     body.appendChild(mr);
     // A makrók MINDIG egy adagra vonatkoznak – egyértelműen jelezzük.
-    body.appendChild(el("p", "macro-note", "▲ A fenti kalória és makrók 1 adagra szólnak"));
-    body.appendChild(macroBar(macros));
+    const noteText = multiplier !== 1
+      ? `▲ A fenti kalória és makrók ${multiplier}x ${multiplier === 1 ? "1 adag" : multiplier + " adag"}-ra szólnak`
+      : "▲ A fenti kalória és makrók 1 adagra szólnak";
+    body.appendChild(el("p", "macro-note", noteText));
+    body.appendChild(macroBar(scaledMacros));
+
+    // Szorzó onChange
+    multInput.addEventListener("input", () => {
+      const newMult = parseFloat(multInput.value) || 1;
+      if (newMult > 0 && newMult !== multiplier) {
+        renderModal(name, macros, ings, prep, meta, newMult);
+      }
+    });
 
     const sv = meta.servings;
     let ingHead = "Hozzávalók";
@@ -306,7 +391,8 @@
         li.appendChild(el("span", null, cap(ing)));
       } else {
         li.appendChild(el("span", null, cap(ing.n)));
-        li.appendChild(el("span", "ing-amt", `${ing.a} ${ing.u}`));
+        const scaledAmount = (ing.a * multiplier).toFixed(1).replace(/\.0$/, "");
+        li.appendChild(el("span", "ing-amt", `${scaledAmount} ${ing.u}`));
       }
       ul.appendChild(li);
     }

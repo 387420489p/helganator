@@ -232,6 +232,24 @@ body {
 .miss-tag { display: inline-block; background: #fbe9e4; color: var(--warn);
   border-radius: 6px; padding: 1px 7px; font-size: 11px; margin: 2px 4px 0 0; }
 
+.mult-row { display: flex; align-items: center; gap: 12px;
+  background: var(--accent); padding: 10px 12px; border-radius: 10px; margin: 8px 0; }
+.mult-row label { font-size: 13px; font-weight: 600; color: var(--ink); flex: 1; }
+.mult-input { width: 60px; padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--green-d); text-align: center; }
+.meal-left { display: flex; flex-direction: column; flex: 1; }
+.meal-actions { display: flex; gap: 6px; }
+.meal-btn { background: var(--accent); border: 0; border-radius: 8px; padding: 6px 10px;
+  font-size: 14px; cursor: pointer; flex: 0 0 auto; }
+.meal-btn:active { background: var(--green); }
+.swap-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.swap-item { display: flex; align-items: center; gap: 12px; padding: 10px;
+  border: 1px solid var(--line); border-radius: 10px; cursor: pointer; margin-bottom: 8px; }
+.swap-item:active { background: var(--accent); }
+.swap-main { display: flex; flex-direction: column; flex: 1; }
+.swap-main .dish-name { font-size: 14px; font-weight: 600; }
+.swap-main .dish-meta { font-size: 12px; color: var(--muted); }
+
 .toast {
   position: fixed; bottom: calc(84px + env(safe-area-inset-bottom)); left: 50%;
   transform: translateX(-50%); background: var(--ink); color: #fff;
