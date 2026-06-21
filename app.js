@@ -399,8 +399,19 @@
     body.appendChild(ul);
 
     if (prep && prep.trim()) {
-      body.appendChild(el("h3", "sec-title", "Elkészítés"));
-      body.appendChild(el("p", "prep-text", prep));
+      const prepHead = el("div", "prep-head");
+      prepHead.appendChild(el("h3", "sec-title", "Elkészítés"));
+
+      let cleanPrep = prep;
+      const isAiGen = prep.startsWith("[AI generált]");
+      if (isAiGen) {
+        const badge = el("span", "ai-badge", "🤖 AI");
+        badge.title = "Mesterséges intelligenciával generált leírás";
+        prepHead.appendChild(badge);
+        cleanPrep = prep.replace(/^\[AI generált\]:\s*/, "");
+      }
+      body.appendChild(prepHead);
+      body.appendChild(el("p", "prep-text", cleanPrep));
     }
     $("#modal").classList.remove("hidden");
     const card = $(".modal-card"); if (card) card.scrollTop = 0;   // mindig a tetejéről nyíljon
